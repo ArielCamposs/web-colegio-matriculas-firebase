@@ -5,7 +5,7 @@ export default function MarketingLayout({ children }: { children: React.ReactNod
     return (
         <>
             <SiteHeader />
-            <main className="mx-auto max-w-6xl px-4 py-10">{children}</main>
+            <main>{children}</main>
             <SiteFooter />
         </>
     );

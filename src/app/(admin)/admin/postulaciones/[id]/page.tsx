@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
     getApplication,
     listDocuments,
@@ -10,17 +10,10 @@ import {
     verifyDocument,
     ApplicationStatus,
 } from "@/lib/firebase/firestore";
-import { Badge } from "@/components/ui/Badge";
-
-function statusVariant(status: string) {
-    if (status === "approved") return "green";
-    if (status === "rejected") return "red";
-    if (status === "observed") return "yellow";
-    return "gray";
-}
 
 export default function AdminPostulacionDetallePage() {
     const { id } = useParams<{ id: string }>();
+    const router = useRouter();
 
     const [app, setApp] = useState<any>(null);
     const [docs, setDocs] = useState<any[]>([]);
@@ -42,9 +35,10 @@ export default function AdminPostulacionDetallePage() {
     const docsByType = useMemo(() => {
         const map = new Map<string, any[]>();
         docs.forEach((d) => {
-            const arr = map.get(d.doc_type) ?? [];
+            const key = d.type || "otro";
+            const arr = map.get(key) ?? [];
             arr.push(d);
-            map.set(d.doc_type, arr);
+            map.set(key, arr);
         });
         return map;
     }, [docs]);
@@ -69,7 +63,7 @@ export default function AdminPostulacionDetallePage() {
             await verifyDocument(docId, verified, null);
             await reload();
         } catch (e: any) {
-            setErr(e?.message ?? "No se pudo verificar (revisa rules/claims)");
+            setErr(e?.message ?? "No se pudo verificar");
         } finally {
             setSaving(false);
         }
@@ -79,7 +73,7 @@ export default function AdminPostulacionDetallePage() {
         setErr(null);
         setSaving(true);
         try {
-            await verifyDocument(docId, false, note); // dejar observed a nivel doc (verified=false) + nota
+            await verifyDocument(docId, false, note);
             await reload();
         } catch (e: any) {
             setErr(e?.message ?? "No se pudo guardar la nota");
@@ -88,156 +82,178 @@ export default function AdminPostulacionDetallePage() {
         }
     }
 
-    if (!app) return <p className="text-sm text-slate-600">Cargando…</p>;
+    if (!app) return (
+        <div className="flex h-screen items-center justify-center bg-white">
+            <div className="animate-pulse text-slate-400 font-medium">Cargando detalles...</div>
+        </div>
+    );
 
     return (
-        <div className="space-y-6">
-            <div className="flex items-start justify-between gap-3">
+        <div className="max-w-6xl mx-auto py-8 px-4 space-y-8">
+            {/* Header / Breadcrumb */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between border-b border-slate-100 pb-6">
                 <div>
-                    <h2 className="text-lg font-semibold">Detalle postulación</h2>
-                    <p className="text-sm text-slate-600 break-all">ID: {id}</p>
-                </div>
-                <Link className="text-sm underline" href="/admin/postulaciones">
-                    ← Volver
-                </Link>
-            </div>
-
-            <div className="rounded-xl border bg-white p-5 space-y-3">
-                <div className="flex items-center justify-between gap-3">
-                    <div>
-                        <p className="font-medium">Postulación {app.year}</p>
-                        <p className="text-sm text-slate-600 break-all">Guardian: {app.guardian_id}</p>
+                    <div className="flex items-center gap-2 text-sm text-slate-500 mb-2">
+                        <Link href="/admin/postulaciones" className="hover:text-slate-900 transition-colors">Postulaciones</Link>
+                        <span>/</span>
+                        <span className="text-slate-900 font-medium">ID {id.slice(0, 8)}</span>
                     </div>
-                    <Badge variant={statusVariant(app.status) as any}>{app.status}</Badge>
+                    <h1 className="text-3xl font-extrabold text-slate-900">
+                        {app.student_data?.name || "Sin Nombre"}
+                    </h1>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
-                    <button
-                        disabled={saving}
-                        onClick={() => onStatus("submitted")}
-                        className="rounded-md border bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-60"
-                    >
-                        Marcar “submitted”
-                    </button>
+                <div className="flex flex-wrap gap-3">
                     <button
                         disabled={saving}
                         onClick={() => onStatus("observed")}
-                        className="rounded-md border bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-60"
+                        className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-bold text-amber-700 hover:bg-amber-100 transition-all disabled:opacity-50"
                     >
-                        Marcar “observed”
+                        Solicitar Correcciones
                     </button>
                     <button
                         disabled={saving}
                         onClick={() => onStatus("approved")}
-                        className="rounded-md bg-emerald-600 px-3 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-60"
+                        className="rounded-xl bg-emerald-600 px-6 py-2 text-sm font-bold text-white hover:bg-emerald-500 shadow-lg shadow-emerald-200 transition-all disabled:opacity-50"
                     >
-                        Aprobar
+                        Aprobar Postulación
                     </button>
                     <button
                         disabled={saving}
                         onClick={() => onStatus("rejected")}
-                        className="rounded-md bg-rose-600 px-3 py-2 text-sm text-white hover:bg-rose-700 disabled:opacity-60"
+                        className="rounded-xl bg-orange-600 px-4 py-2 text-sm font-bold text-white hover:bg-orange-500 transition-all disabled:opacity-50"
                     >
                         Rechazar
                     </button>
                 </div>
-
-                {err && <p className="text-sm text-rose-600">{err}</p>}
             </div>
 
-            <div className="rounded-xl border bg-white p-5 space-y-4">
-                <div className="flex items-center justify-between">
-                    <p className="font-medium">Documentos</p>
-                    <p className="text-sm text-slate-600">{docs.length} cargado(s)</p>
+            {err && (
+                <div className="p-4 rounded-xl bg-red-50 border border-red-100 text-red-600 text-sm font-medium">
+                    Error: {err}
+                </div>
+            )}
+
+            <div className="grid gap-8 lg:grid-cols-3">
+                {/* Information Sidebar */}
+                <div className="lg:col-span-1 space-y-6">
+                    <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm overflow-hidden">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Información del Estudiante</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-xs text-slate-500">RUT</p>
+                                <p className="font-bold text-slate-900">{app.student_data?.rut || "N/A"}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">Curso al que postula</p>
+                                <p className="font-bold text-slate-900 uppercase">{app.student_data?.grade || "N/A"}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">Colegio Procedencia</p>
+                                <p className="font-medium text-slate-900">{app.academic_data?.previous_school || "No indicado"}</p>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm">
+                        <h3 className="text-sm font-bold text-slate-400 uppercase tracking-widest mb-4">Datos del Apoderado</h3>
+                        <div className="space-y-4">
+                            <div>
+                                <p className="text-xs text-slate-500">ID Apoderado</p>
+                                <p className="text-xs font-mono text-slate-400 truncate">{app.guardian_id}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">Teléfono</p>
+                                <p className="font-bold text-slate-900">{app.guardian_data?.phone || "N/A"}</p>
+                            </div>
+                            <div>
+                                <p className="text-xs text-slate-500">Dirección</p>
+                                <p className="font-medium text-slate-900">{app.guardian_data?.address || "N/A"}</p>
+                            </div>
+                        </div>
+                    </section>
                 </div>
 
-                {!docs.length && (
-                    <p className="text-sm text-slate-600">Aún no hay documentos para esta postulación.</p>
-                )}
+                {/* Main Content: Documents & Review */}
+                <div className="lg:col-span-2 space-y-6">
+                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="p-6 border-b border-slate-100 flex items-center justify-between">
+                            <h2 className="text-xl font-bold text-slate-900">Validación de Documentos</h2>
+                            <span className="text-xs font-bold text-slate-500 bg-slate-100 px-3 py-1 rounded-full">
+                                {docs.length} ARCHIVOS
+                            </span>
+                        </div>
 
-                {[...docsByType.entries()].map(([docType, items]) => {
-                    const last = items[0]; // vienen ordenados desc por created_at en tu helper
-                    return (
-                        <div key={docType} className="rounded-lg border p-4 space-y-2">
-                            <div className="flex items-start justify-between gap-3">
-                                <div>
-                                    <p className="font-medium">{docType}</p>
-                                    <p className="text-sm text-slate-600">
-                                        Estado: {last.verified ? "Verificado" : "No verificado"}
-                                        {last.note ? ` · Nota: ${last.note}` : ""}
-                                    </p>
-                                </div>
+                        <div className="divide-y divide-slate-100">
+                            {docs.length === 0 ? (
+                                <div className="p-10 text-center text-slate-500 italic">No se han cargado documentos aún.</div>
+                            ) : (
+                                [...docsByType.entries()].map(([docType, items]) => {
+                                    const last = items[0];
+                                    return (
+                                        <div key={docType} className="p-6 transition-colors hover:bg-slate-50/50">
+                                            <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                                                <div className="flex gap-4">
+                                                    <div className={`mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl font-bold ${last.verified ? "bg-emerald-100 text-emerald-600" : "bg-slate-100 text-slate-400"
+                                                        }`}>
+                                                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                        </svg>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <h4 className="font-bold text-slate-900 capitalize">{docType.replace(/([A-Z])/g, ' $1').trim()}</h4>
+                                                        <p className="text-sm text-slate-500">{last.name}</p>
+                                                        {last.note && (
+                                                            <div className="text-xs bg-amber-50 text-amber-800 p-2 rounded-lg border border-amber-100 mt-2">
+                                                                <strong>Nota:</strong> {last.note}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {last.download_url && (
-                                        <a
-                                            className="rounded-md border bg-white px-3 py-2 text-sm hover:bg-slate-100"
-                                            href={last.download_url}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                        >
-                                            Ver archivo
-                                        </a>
-                                    )}
-                                    <button
-                                        disabled={saving}
-                                        onClick={() => onVerify(last.id, true)}
-                                        className="rounded-md bg-slate-900 px-3 py-2 text-sm text-white hover:bg-slate-800 disabled:opacity-60"
-                                    >
-                                        Verificar
-                                    </button>
-                                    <button
-                                        disabled={saving}
-                                        onClick={() => onVerify(last.id, false)}
-                                        className="rounded-md border bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-60"
-                                    >
-                                        Desverificar
-                                    </button>
-                                </div>
-                            </div>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {last.url && (
+                                                        <a
+                                                            className="rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-bold text-slate-700 hover:bg-slate-50 transition-all"
+                                                            href={last.url}
+                                                            target="_blank"
+                                                            rel="noreferrer"
+                                                        >
+                                                            Ver PDF
+                                                        </a>
+                                                    )}
+                                                    <button
+                                                        disabled={saving}
+                                                        onClick={() => onVerify(last.id, !last.verified)}
+                                                        className={`rounded-xl px-4 py-2 text-sm font-bold transition-all shadow-sm ${last.verified
+                                                                ? "bg-emerald-50 text-emerald-700 border border-emerald-100"
+                                                                : "bg-slate-900 text-white shadow-slate-200"
+                                                            }`}
+                                                    >
+                                                        {last.verified ? "Verificado ✓" : "Validar"}
+                                                    </button>
+                                                </div>
+                                            </div>
 
-                            <div className="flex flex-col gap-2 md:flex-row md:items-center">
-                                <input
-                                    defaultValue={last.note ?? ""}
-                                    placeholder="Nota/observación (ej: falta firma, documento ilegible...)"
-                                    className="w-full rounded-md border px-3 py-2 text-sm"
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            const value = (e.target as HTMLInputElement).value;
-                                            onSetNote(last.id, value.trim() ? value : "");
-                                        }
-                                    }}
-                                />
-                                <button
-                                    disabled={saving}
-                                    onClick={() => {
-                                        const input = document.querySelector<HTMLInputElement>(`input[placeholder^="Nota/observación"]`);
-                                        const value = input?.value ?? "";
-                                        onSetNote(last.id, value.trim() ? value : "");
-                                    }}
-                                    className="rounded-md border bg-white px-3 py-2 text-sm hover:bg-slate-100 disabled:opacity-60"
-                                >
-                                    Guardar nota
-                                </button>
-                            </div>
-
-                            {items.length > 1 && (
-                                <details className="text-sm text-slate-600">
-                                    <summary className="cursor-pointer select-none">
-                                        Ver historial ({items.length})
-                                    </summary>
-                                    <ul className="mt-2 space-y-1">
-                                        {items.map((d) => (
-                                            <li key={d.id} className="break-all">
-                                                {d.id} · verified={String(d.verified)} {d.note ? `· note=${d.note}` : ""}
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </details>
+                                            <div className="mt-6 flex flex-col gap-2 md:flex-row md:items-center">
+                                                <input
+                                                    placeholder="Añadir nota de observación..."
+                                                    className="flex-1 rounded-xl border border-slate-100 bg-slate-50 px-4 py-2 text-sm outline-none focus:bg-white focus:ring-1 focus:ring-slate-900"
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            const val = (e.target as HTMLInputElement).value;
+                                                            onSetNote(last.id, val);
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    );
+                                })
                             )}
                         </div>
-                    );
-                })}
+                    </div>
+                </div>
             </div>
         </div>
     );

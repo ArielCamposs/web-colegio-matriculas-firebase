@@ -1,63 +1,106 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Container from "@/components/ui/Container";
 
 export default function SiteHeader() {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
+    const [isVisible, setIsVisible] = useState(true);
+
+    // Persist dismiss state
+    useEffect(() => {
+        const dismissed = localStorage.getItem("admission-banner-dismissed");
+        if (dismissed) setIsVisible(false);
+    }, []);
+
+    const dismiss = () => {
+        setIsVisible(false);
+        localStorage.setItem("admission-banner-dismissed", "true");
+    };
 
     return (
         <>
-            {/* Admission Announcement Banner - Enhanced */}
-            <div className="relative overflow-hidden bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500">
-                <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PGRlZnM+PHBhdHRlcm4gaWQ9ImdyaWQiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgcGF0dGVyblVuaXRzPSJ1c2VyU3BhY2VPblVzZSI+PHBhdGggZD0iTSAxMCAwIEwgMCAwIDAgMTAiIGZpbGw9Im5vbmUiIHN0cm9rZT0id2hpdGUiIHN0cm9rZS1vcGFjaXR5PSIwLjEiIHN0cm9rZS13aWR0aD0iMSIvPjwvcGF0dGVybj48L2RlZnM+PHJlY3Qgd2lkdGg9IjEwMCUiIGhlaWdodD0iMTAwJSIgZmlsbD0idXJsKCNncmlkKSIvPjwvc3ZnPg==')] opacity-30"></div>
-                <Container>
-                    <div className="relative flex flex-col items-center justify-center gap-4 py-5 text-center sm:flex-row sm:justify-between sm:py-6">
-                        <div className="flex flex-col items-center gap-2 sm:flex-row sm:gap-4">
-                            <div className="flex items-center gap-3">
-                                <div className="relative">
-                                    <div className="absolute inset-0 animate-ping rounded-full bg-white opacity-75"></div>
-                                    <div className="relative h-3 w-3 animate-pulse rounded-full bg-white"></div>
+            {/* Professional Admission Banner - Dark Emerald Mesh */}
+            {isVisible && (
+                <div className="relative overflow-hidden bg-slate-950 px-4 py-4 sm:px-6">
+                    {/* Decorative mesh/light gradients */}
+                    <div className="absolute left-1/4 top-0 h-64 w-64 -translate-y-1/2 rounded-full bg-emerald-500/20 blur-[80px]" />
+                    <div className="absolute right-1/4 bottom-0 h-64 w-64 translate-y-1/2 rounded-full bg-teal-500/10 blur-[80px]" />
+
+                    <Container>
+                        <div className="relative flex flex-col items-center justify-between gap-4 md:flex-row">
+                            <div className="flex flex-col items-center gap-3 text-center md:flex-row md:text-left">
+                                <div className="inline-flex items-center gap-2 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-3 py-1">
+                                    <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                                    </span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest text-emerald-400">
+                                        Abierto
+                                    </span>
                                 </div>
-                                <span className="text-lg font-black uppercase tracking-wider text-white sm:text-xl md:text-2xl">
-                                    🎓 Admisión 2026 Abierta
-                                </span>
+                                <p className="text-sm font-bold text-white sm:text-base">
+                                    <span className="text-emerald-400">Admisión 2026:</span> ¡Asegura los últimos cupos disponibles ahora!
+                                </p>
                             </div>
-                            <span className="text-base font-semibold text-white/95 sm:text-lg">
-                                ¡Últimos cupos disponibles!
-                            </span>
+
+                            <div className="flex items-center gap-4">
+                                <Link
+                                    href="/admision"
+                                    className="group relative overflow-hidden rounded-xl bg-white px-6 py-2 text-xs font-black text-slate-950 transition-all hover:scale-105 active:scale-95"
+                                >
+                                    <span className="relative z-10">Postular Ahora</span>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-100 to-white opacity-0 transition-opacity group-hover:opacity-100" />
+                                </Link>
+
+                                <button
+                                    onClick={dismiss}
+                                    className="flex h-8 w-8 items-center justify-center rounded-lg text-white/40 transition-colors hover:bg-white/5 hover:text-white"
+                                    aria-label="Cerrar aviso"
+                                >
+                                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
-                        <Link
-                            href="/admision"
-                            className="group relative overflow-hidden rounded-xl bg-white px-6 py-3.5 text-base font-bold text-emerald-600 shadow-2xl transition-all hover:scale-105 hover:shadow-emerald-900/20 sm:px-8 sm:py-4"
-                        >
-                            <div className="absolute inset-0 bg-gradient-to-r from-emerald-50 to-teal-50 opacity-0 transition-opacity group-hover:opacity-100"></div>
-                            <span className="relative flex items-center gap-2">
-                                Postular Ahora
-                                <svg className="h-5 w-5 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
-                            </span>
-                        </Link>
-                    </div>
-                </Container>
-            </div>
+                    </Container>
+                </div>
+            )}
 
             {/* Main Header */}
-            <header className="sticky top-0 z-20 border-b border-slate-200 bg-white/95 backdrop-blur-md shadow-sm">
+            <header className="sticky top-0 z-50 border-b border-white/10 bg-white/70 backdrop-blur-xl shadow-sm transition-all duration-300">
                 <Container>
-                    <div className="flex items-center justify-between py-4 md:py-5">
-                        <Link href="/" className="text-xl md:text-2xl font-bold text-slate-900 tracking-tight">Colegio Particular</Link>
+                    <div className="flex items-center justify-between py-4 md:py-6">
+                        <Link href="/" className="group flex items-center gap-2">
+                            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-slate-900 text-white shadow-lg transition-transform group-hover:scale-110">
+                                <span className="text-xl font-black">C</span>
+                            </div>
+                            <span className="text-xl md:text-2xl font-black text-slate-900 tracking-tight">Colegio <span className="text-slate-500 font-medium">Particular</span></span>
+                        </Link>
 
                         {/* Desktop Navigation */}
-                        <nav className="hidden md:flex items-center gap-8">
-                            <Link href="/colegio" className="text-sm font-medium text-slate-700 transition-colors hover:text-slate-900">Colegio</Link>
-                            <Link href="/admision" className="text-sm font-medium text-slate-700 transition-colors hover:text-slate-900">Admisión</Link>
-                            <Link href="/aranceles" className="text-sm font-medium text-slate-700 transition-colors hover:text-slate-900">Aranceles</Link>
-                            <Link href="/noticias" className="text-sm font-medium text-slate-700 transition-colors hover:text-slate-900">Noticias</Link>
-                            <Link href="/contacto" className="text-sm font-medium text-slate-700 transition-colors hover:text-slate-900">Contacto</Link>
-                            <Link href="/portal" className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-800 hover:shadow-md">Portal</Link>
+                        <nav className="hidden md:flex items-center gap-1">
+                            {[
+                                { name: "Colegio", href: "/colegio" },
+                                { name: "Admisión", href: "/admision" },
+                                { name: "Aranceles", href: "/aranceles" },
+                                { name: "Noticias", href: "/noticias" },
+                                { name: "Contacto", href: "/contacto" },
+                            ].map((item) => (
+                                <Link
+                                    key={item.href}
+                                    href={item.href}
+                                    className="px-4 py-2 text-sm font-bold text-slate-600 transition-all hover:bg-slate-50 hover:text-slate-900 rounded-xl"
+                                >
+                                    {item.name}
+                                </Link>
+                            ))}
+                            <div className="ml-4 h-6 w-[1px] bg-slate-200" />
+                            <Link href="/portal" className="ml-4 rounded-xl bg-slate-900 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-slate-200 transition-all hover:bg-slate-800 hover:scale-105 active:scale-95">
+                                Acceder
+                            </Link>
                         </nav>
 
                         {/* Mobile Menu Button */}
@@ -108,4 +151,3 @@ export default function SiteHeader() {
         </>
     );
 }
-

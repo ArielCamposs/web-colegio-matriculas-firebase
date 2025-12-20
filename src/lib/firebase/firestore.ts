@@ -49,3 +49,8 @@ export async function listDocuments(appId: string) {
 export async function verifyDocument(docId: string, verified: boolean, note: string | null) {
     await updateDoc(doc(db, "documents", docId), { verified, note });
 }
+
+export async function getUserProfile(uid: string) {
+    const snap = await getDoc(doc(db, "profiles", uid));
+    return snap.exists() ? ({ id: snap.id, ...snap.data() } as any) : null;
+}
